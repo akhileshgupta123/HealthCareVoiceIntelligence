@@ -54,7 +54,7 @@ MOCK_CHECKS = {
         "patient_name": "Jane Smith",
         "amount": 75.00,
         "status": "pending",
-        "issue_date": None,
+        "issue_date": "2024-01-26T00:00:00",
         "cleared_date": None,
         "check_number": "CHK-2024-001236"
     }

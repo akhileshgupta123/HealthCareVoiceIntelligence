@@ -71,7 +71,8 @@ def test_ticket_model():
         description="Incorrect charge on invoice",
         priority=TicketPriority.HIGH,
         category="billing",
-        created_by="admin"
+        created_by="admin",
+        status="open"
     )
     assert ticket.id == "TKT001"
     assert ticket.priority == TicketPriority.HIGH

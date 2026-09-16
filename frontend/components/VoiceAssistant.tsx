@@ -16,15 +16,26 @@ export default function VoiceAssistant({ onConnectionChange }: VoiceAssistantPro
 
   const connectToRoom = async () => {
     try {
-      // In a real implementation, you would get a token from your backend
-      const url = process.env.NEXT_PUBLIC_LIVEKIT_URL || 'ws://localhost:7880'
-      const token = process.env.NEXT_PUBLIC_LIVEKIT_TOKEN || ''
+      // Fetch token from backend
+      const response = await fetch('http://localhost:8000/api/v1/livekit/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          room_name: 'healthcare-ops-room',
+          participant_name: 'user-' + Math.random().toString(36).substr(2, 9)
+        })
+      })
 
-      if (!token) {
-        console.error('LiveKit token not configured')
-        alert('LiveKit token not configured. Please check your environment variables.')
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Failed to get LiveKit token:', error)
+        alert('Failed to connect to voice server. Please ensure the backend is running.')
         return
       }
+
+      const { token, url } = await response.json()
 
       const room = new Room()
       roomRef.current = room
@@ -43,10 +54,11 @@ export default function VoiceAssistant({ onConnectionChange }: VoiceAssistantPro
       })
 
       // Handle transcription events
-      room.on(RoomEvent.TranscriptionReceived, (segments) => {
-        const text = segments.map(s => s.text).join(' ')
-        setTranscript(prev => [...prev, `User: ${text}`])
-      })
+      // Note: TranscriptionReceived may not be available in current livekit-client version
+      // room.on(RoomEvent.TranscriptionReceived, (segments) => {
+      //   const text = segments.map(s => s.text).join(' ')
+      //   setTranscript(prev => [...prev, `User: ${text}`])
+      // })
 
       console.log('Connected to LiveKit room')
     } catch (error) {

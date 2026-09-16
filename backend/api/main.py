@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from api.routers import claims, checks, tickets, eligibility, knowledge, auth
+from api.routers import claims, checks, tickets, eligibility, knowledge, auth, livekit
 from api.database import engine, Base
 from api.moss_client import MossClientWrapper
 from api.logger import logger
@@ -61,6 +61,7 @@ app.include_router(checks.router, prefix="/api/v1", tags=["checks"])
 app.include_router(tickets.router, prefix="/api/v1", tags=["tickets"])
 app.include_router(eligibility.router, prefix="/api/v1", tags=["eligibility"])
 app.include_router(knowledge.router, prefix="/api/v1", tags=["knowledge"])
+app.include_router(livekit.router, prefix="/api/v1/livekit", tags=["livekit"])
 
 @app.get("/")
 async def root():
