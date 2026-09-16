@@ -7,6 +7,7 @@ import os
 from typing import List, Dict, Any, Optional
 import moss
 from moss import MossClient, SessionIndex, SearchResult
+from api.logger import logger
 
 
 class MossClientWrapper:
@@ -38,10 +39,10 @@ class MossClientWrapper:
             # In a real implementation, you would create a persistent index
             await self._index_sample_knowledge()
                 
-            print("Moss client initialized successfully")
+            logger.info("Moss client initialized successfully")
             
         except Exception as e:
-            print(f"Error initializing Moss client: {e}")
+            logger.error(f"Error initializing Moss client: {e}")
             # Don't raise - allow the app to run without Moss for POC
             self.client = None
     
@@ -94,7 +95,7 @@ class MossClientWrapper:
             )
             return [{"text": r.text, "score": r.score, "metadata": r.metadata} for r in results]
         except Exception as e:
-            print(f"Error querying session context: {e}")
+            logger.error(f"Error querying session context: {e}")
             return []
     
     async def query_knowledge_base(
@@ -143,7 +144,7 @@ class MossClientWrapper:
                 metadata=metadata
             )
         except Exception as e:
-            print(f"Error adding session context: {e}")
+            logger.error(f"Error adding session context: {e}")
     
     async def clear_session(self, session_id: str):
         """Clear session context"""
@@ -153,7 +154,7 @@ class MossClientWrapper:
         try:
             self.session_index.clear()
         except Exception as e:
-            print(f"Error clearing session: {e}")
+            logger.error(f"Error clearing session: {e}")
     
     async def close(self):
         """Close Moss client"""

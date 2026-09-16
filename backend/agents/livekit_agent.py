@@ -14,6 +14,7 @@ load_dotenv()
 
 from agents.supervisor import SupervisorAgent
 from api.moss_client import MossClient
+from api.logger import logger
 
 
 class HealthcareVoiceAgent(Agent):
@@ -39,29 +40,29 @@ class HealthcareVoiceAgent(Agent):
         # Initialize supervisor agent
         self.supervisor_agent = SupervisorAgent(self.moss_client)
         
-        print(f"Healthcare Voice Agent started for session: {self.session_id}")
+        logger.info(f"Healthcare Voice Agent started for session: {self.session_id}")
     
     async def on_stop(self):
         """Cleanup when session ends"""
         if self.moss_client:
             await self.moss_client.close()
-        print("Healthcare Voice Agent stopped")
+        logger.info("Healthcare Voice Agent stopped")
     
     async def on_transcript(self, transcript: rtc.TranscriptionEvent):
         """Handle incoming speech transcription"""
         user_text = transcript.text
-        print(f"User said: {user_text}")
+        logger.info(f"User said: {user_text}")
         
         # Process through supervisor agent
         try:
             response = await self.supervisor_agent.process(user_text, self.session_id)
-            print(f"Agent response: {response}")
+            logger.info(f"Agent response: {response}")
             
             # Convert response to speech
             await self.session.say(response)
             
         except Exception as e:
-            print(f"Error processing request: {e}")
+            logger.error(f"Error processing request: {e}")
             await self.session.say("I apologize, but I encountered an error. Please try again.")
     
     async def on_message(self, message: rtc.DataMessage):
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     async def main():
         # This would be used with LiveKit's agent framework
         # For now, it's a placeholder for the actual deployment
-        print("Healthcare Voice Agent - LiveKit Integration")
-        print("To deploy, use the LiveKit Agent CLI or integrate with your LiveKit server")
+        logger.info("Healthcare Voice Agent - LiveKit Integration")
+        logger.info("To deploy, use the LiveKit Agent CLI or integrate with your LiveKit server")
     
     asyncio.run(main())

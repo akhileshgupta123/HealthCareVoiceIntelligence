@@ -30,7 +30,7 @@ This project implements a multi-agent voice copilot for healthcare operations:
 
 - **Backend**: Python 3.10+, FastAPI, LangGraph, Moss SDK, SQLAlchemy
 - **Frontend**: Node.js 20+, React, Next.js, TypeScript, LiveKit SDK
-- **Database**: SQLite (POC), PostgreSQL (production)
+- **Database**: SQLite
 - **Voice**: LiveKit WebRTC
 
 ## Quick Start

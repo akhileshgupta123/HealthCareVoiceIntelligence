@@ -1,6 +1,6 @@
 """
 Database Configuration
-SQLAlchemy setup for SQLite (POC) or PostgreSQL (Production)
+SQLAlchemy setup for SQLite
 """
 
 from sqlalchemy import create_engine
@@ -11,17 +11,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use SQLite for POC by default, PostgreSQL if DATABASE_URL is provided
+# Use SQLite database
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./healthcare_ops.db")
 
 # SQLite-specific configuration
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"check_same_thread": False}  # Needed for SQLite
-    )
-else:
-    engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}  # Needed for SQLite
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

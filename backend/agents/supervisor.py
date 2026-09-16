@@ -8,9 +8,12 @@ from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
+
+from api.logger import logger
 
 
 class AgentState(TypedDict):
@@ -69,6 +72,7 @@ class SupervisorAgent:
         """Route the request to the appropriate agent based on intent"""
         messages = state["messages"]
         last_message = messages[-1].content if messages else ""
+        logger.info(f"Routing request: {last_message[:100]}...")
         
         # Use LLM to classify intent
         intent_prompt = f"""
@@ -85,6 +89,7 @@ class SupervisorAgent:
         
         response = self.llm.invoke(intent_prompt)
         intent = response.content.strip().lower()
+        logger.info(f"Classified intent: {intent}")
         
         # Map intent to agent
         intent_mapping = {
@@ -95,12 +100,14 @@ class SupervisorAgent:
         }
         
         state["next_agent"] = intent_mapping.get(intent, "knowledge")
+        logger.info(f"Routed to agent: {state['next_agent']}")
         return state
     
     def _claims_agent(self, state: AgentState) -> AgentState:
         """Handle claims-related requests"""
         from agents.workers import ClaimsAgent
         
+        logger.info("Processing claims request")
         claims_agent = ClaimsAgent(self.moss_client)
         response = claims_agent.process(state["messages"][-1].content, state["session_id"])
         
@@ -112,6 +119,7 @@ class SupervisorAgent:
         """Handle knowledge-related requests"""
         from agents.workers import KnowledgeAgent
         
+        logger.info("Processing knowledge request")
         knowledge_agent = KnowledgeAgent(self.moss_client)
         response = knowledge_agent.process(state["messages"][-1].content, state["session_id"])
         
@@ -123,6 +131,7 @@ class SupervisorAgent:
         """Handle escalation requests"""
         from agents.workers import EscalationAgent
         
+        logger.info("Processing escalation request")
         escalation_agent = EscalationAgent(self.moss_client)
         response = escalation_agent.process(state["messages"][-1].content, state["session_id"])
         
@@ -132,6 +141,7 @@ class SupervisorAgent:
     
     async def process(self, user_message: str, session_id: str) -> str:
         """Process a user message through the supervisor workflow"""
+        logger.info(f"Processing message for session {session_id}")
         initial_state: AgentState = {
             "messages": [HumanMessage(content=user_message)],
             "next_agent": "supervisor",
@@ -148,6 +158,7 @@ class SupervisorAgent:
         
         # Run the workflow
         final_state = self.graph.invoke(initial_state)
+        logger.info("Workflow execution complete")
         
         # Get the last AI response
         ai_messages = [msg for msg in final_state["messages"] if isinstance(msg, AIMessage)]
@@ -163,4 +174,5 @@ class SupervisorAgent:
             
             return response
         
+        logger.warning("No AI response generated")
         return "I apologize, but I couldn't process your request. Please try again."

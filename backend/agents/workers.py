@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from api.logger import logger
+
 
 class BaseWorkerAgent:
     """Base class for worker agents"""
@@ -58,6 +60,7 @@ class ClaimsAgent(BaseWorkerAgent):
     
     def process(self, user_message: str, session_id: str) -> str:
         """Process claims-related requests"""
+        logger.info(f"ClaimsAgent processing: {user_message[:100]}...")
         # Simple pattern matching for demo
         user_message_lower = user_message.lower()
         
@@ -65,6 +68,7 @@ class ClaimsAgent(BaseWorkerAgent):
             # Extract claim ID (simplified)
             claim_id = self._extract_claim_id(user_message)
             if claim_id:
+                logger.info(f"Retrieving claim status for {claim_id}")
                 return self._get_claim_status(claim_id)
             else:
                 return "I can help you check claim status. Please provide the claim ID (e.g., CLM001)."
@@ -72,6 +76,7 @@ class ClaimsAgent(BaseWorkerAgent):
         elif "check" in user_message_lower and "status" in user_message_lower:
             check_id = self._extract_check_id(user_message)
             if check_id:
+                logger.info(f"Retrieving check status for {check_id}")
                 return self._get_check_status(check_id)
             else:
                 return "I can help you check payment status. Please provide the check ID (e.g., CHK001)."
@@ -134,6 +139,7 @@ class KnowledgeAgent(BaseWorkerAgent):
     
     def process(self, user_message: str, session_id: str) -> str:
         """Process knowledge-related requests"""
+        logger.info(f"KnowledgeAgent processing: {user_message[:100]}...")
         # Query Moss knowledge base
         knowledge = self._query_moss_knowledge_sync(user_message)
         
@@ -166,6 +172,7 @@ class EscalationAgent(BaseWorkerAgent):
     
     def process(self, user_message: str, session_id: str) -> str:
         """Process escalation requests"""
+        logger.info(f"EscalationAgent processing: {user_message[:100]}...")
         # Extract ticket information
         patient_id = self._extract_patient_id(user_message)
         subject = self._extract_subject(user_message)
@@ -173,6 +180,7 @@ class EscalationAgent(BaseWorkerAgent):
         
         # Create ticket (simplified)
         ticket_id = f"TKT{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        logger.info(f"Created ticket {ticket_id} with priority {priority}")
         
         response = f"""
         I've created an escalation ticket for you:
