@@ -3,10 +3,9 @@ Moss Client Integration
 Handles sub-10ms semantic search for context and knowledge retrieval
 """
 
-import os
+import uuid
 from typing import List, Dict, Any, Optional
-import moss
-from moss import MossClient, SessionIndex, SearchResult
+from moss import DocumentInfo, MossClient, QueryOptions, SessionIndex
 from api.logger import logger
 
 
@@ -19,32 +18,27 @@ class MossClientWrapper:
         self.client: Optional[MossClient] = None
         self.session_index: Optional[SessionIndex] = None
         self.knowledge_index_name = "knowledge_base"
+        self._knowledge_store = []
         
     async def initialize(self):
         """Initialize Moss client and load indexes"""
+        await self._index_sample_knowledge()
         try:
             # Initialize Moss SDK client
-            self.client = MossClient(
-                project_id=self.project_id,
-                api_key=self.project_key
-            )
+            self.client = MossClient(self.project_id, self.project_key)
             
             # Initialize session index
-            self.session_index = SessionIndex(
-                client=self.client,
-                index_name="session_context"
-            )
+            self.session_index = await self.client.session("session_context")
             
             # For knowledge base, we'll use the client's search functionality
             # In a real implementation, you would create a persistent index
-            await self._index_sample_knowledge()
-                
             logger.info("Moss client initialized successfully")
             
         except Exception as e:
-            logger.error(f"Error initializing Moss client: {e}")
-            # Don't raise - allow the app to run without Moss for POC
+            logger.warning(f"Moss SDK unavailable; using local fallback knowledge base: {e}")
+            # Keep the sample knowledge fallback so the app can still answer voice questions.
             self.client = None
+            self.session_index = None
     
     async def _index_sample_knowledge(self):
         """Index sample healthcare knowledge base"""
@@ -89,11 +83,18 @@ class MossClientWrapper:
             return []
         
         try:
-            results = self.session_index.search(
-                query=query,
-                top_k=top_k
+            results = await self.session_index.query(
+                query,
+                QueryOptions(top_k=top_k),
             )
-            return [{"text": r.text, "score": r.score, "metadata": r.metadata} for r in results]
+            return [
+                {
+                    "text": document.text,
+                    "score": document.score,
+                    "metadata": document.metadata or {},
+                }
+                for document in results.docs
+            ]
         except Exception as e:
             logger.error(f"Error querying session context: {e}")
             return []
@@ -107,8 +108,8 @@ class MossClientWrapper:
         """Query knowledge base for relevant policies and procedures"""
         # For POC, do simple keyword matching
         # In production, this would use Moss's semantic search
-        if not hasattr(self, '_knowledge_store'):
-            return []
+        if not hasattr(self, '_knowledge_store') or not self._knowledge_store:
+            await self._index_sample_knowledge()
         
         query_lower = query.lower()
         results = []
@@ -138,11 +139,14 @@ class MossClientWrapper:
             return
         
         try:
-            metadata["session_id"] = session_id
-            self.session_index.add(
-                text=text,
-                metadata=metadata
-            )
+            document_metadata = {**metadata, "session_id": session_id}
+            await self.session_index.add_docs([
+                DocumentInfo(
+                    id=f"{session_id}-{uuid.uuid4()}",
+                    text=text,
+                    metadata=document_metadata,
+                )
+            ])
         except Exception as e:
             logger.error(f"Error adding session context: {e}")
     
@@ -152,14 +156,18 @@ class MossClientWrapper:
             return
         
         try:
-            self.session_index.clear()
+            documents = await self.session_index.get_docs()
+            session_document_ids = [
+                document.id
+                for document in documents
+                if document.metadata and document.metadata.get("session_id") == session_id
+            ]
+            if session_document_ids:
+                await self.session_index.delete_docs(session_document_ids)
         except Exception as e:
             logger.error(f"Error clearing session: {e}")
     
     async def close(self):
         """Close Moss client"""
-        if self.client:
-            try:
-                self.client.close()
-            except:
-                pass
+        self.session_index = None
+        self.client = None

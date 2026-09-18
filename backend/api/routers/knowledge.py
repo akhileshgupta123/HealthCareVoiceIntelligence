@@ -44,12 +44,20 @@ async def search_knowledge(
         # Convert results to dict format
         formatted_results = []
         for result in results:
-            formatted_results.append({
-                "id": result.id,
-                "text": result.text,
-                "score": result.score,
-                "metadata": result.metadata
-            })
+            if isinstance(result, dict):
+                formatted_results.append({
+                    "id": result.get("id"),
+                    "text": result.get("text", ""),
+                    "score": result.get("score", 0),
+                    "metadata": result.get("metadata", {}),
+                })
+            else:
+                formatted_results.append({
+                    "id": result.id,
+                    "text": result.text,
+                    "score": result.score,
+                    "metadata": result.metadata,
+                })
         
         return KnowledgeResponse(
             query=request.query,
