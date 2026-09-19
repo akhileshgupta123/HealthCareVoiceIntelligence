@@ -3,10 +3,9 @@ Knowledge Router
 Query Moss-backed knowledge base for protocols and policies
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
-from api.moss_client import MossClient
 
 router = APIRouter()
 
@@ -26,7 +25,6 @@ class KnowledgeResponse(BaseModel):
 @router.post("/knowledge/search")
 async def search_knowledge(
     request: KnowledgeQuery,
-    moss_client: MossClient = Depends(lambda: None)  # Will be injected properly
 ):
     """Query the Moss-backed knowledge base for protocols and policies"""
     try:

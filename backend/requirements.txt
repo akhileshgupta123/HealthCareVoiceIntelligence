@@ -4,8 +4,9 @@ uvicorn[standard]>=0.24.0
 pydantic[email]>=2.5.0
 pydantic-settings>=2.1.0
 
-# Moss SDK
-moss==1.12.0
+# Moss SDK is optional for the Vercel demo. Its native dependency does not have
+# a wheel compatible with Vercel's manylinux_2_34 build image. Install
+# requirements-moss.txt only on a platform supported by the Moss SDK.
 
 # AI/LLM
 langchain>=0.1.0

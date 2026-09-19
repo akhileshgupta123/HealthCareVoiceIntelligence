@@ -5,8 +5,19 @@ Handles sub-10ms semantic search for context and knowledge retrieval
 
 import uuid
 from typing import List, Dict, Any, Optional
-from moss import DocumentInfo, MossClient, QueryOptions, SessionIndex
 from api.logger import logger
+
+try:
+    from moss import DocumentInfo, MossClient, QueryOptions, SessionIndex
+except (ImportError, OSError) as error:
+    # The Moss SDK has a native dependency that is not available on every
+    # deployment platform (including Vercel's current Linux build image).
+    DocumentInfo = MossClient = QueryOptions = SessionIndex = None
+    MOSS_SDK_AVAILABLE = False
+    MOSS_SDK_IMPORT_ERROR = error
+else:
+    MOSS_SDK_AVAILABLE = True
+    MOSS_SDK_IMPORT_ERROR = None
 
 
 class MossClientWrapper:
@@ -15,14 +26,20 @@ class MossClientWrapper:
     def __init__(self, project_id: str, project_key: str):
         self.project_id = project_id
         self.project_key = project_key
-        self.client: Optional[MossClient] = None
-        self.session_index: Optional[SessionIndex] = None
+        self.client: Optional[Any] = None
+        self.session_index: Optional[Any] = None
         self.knowledge_index_name = "knowledge_base"
         self._knowledge_store = []
         
     async def initialize(self):
         """Initialize Moss client and load indexes"""
         await self._index_sample_knowledge()
+        if not MOSS_SDK_AVAILABLE:
+            logger.warning(
+                "Moss SDK is unavailable; using local fallback knowledge base: %s",
+                MOSS_SDK_IMPORT_ERROR,
+            )
+            return
         try:
             # Initialize Moss SDK client
             self.client = MossClient(self.project_id, self.project_key)
